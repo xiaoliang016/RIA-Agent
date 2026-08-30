@@ -1,0 +1,91 @@
+target/
+!.mvn/wrapper/maven-wrapper.jar
+!**/src/main/**/target/
+!**/src/test/**/target/
+
+### Node (mcp-wrappers proxy bootstrap) ###
+docs/dev-ops/mcp-wrappers/node_modules/
+docs/dev-ops/mcp-wrappers/package-lock.json
+
+### IntelliJ IDEA ###
+.idea/modules.xml
+.idea/jarRepositories.xml
+.idea/compiler.xml
+.idea/libraries/
+*.iws
+*.iml
+*.ipr
+
+### Eclipse ###
+.apt_generated
+.classpath
+.factorypath
+.project
+.settings
+.springBeans
+.sts4-cache
+
+### NetBeans ###
+/nbproject/private/
+/nbbuild/
+/dist/
+/nbdist/
+/.nb-gradle/
+build/
+!**/src/main/**/build/
+!**/src/test/**/build/
+
+### VS Code ###
+.vscode/
+
+### Mac OS ###
+.DS_Store
+/.idea/
+/ai-agent-station-study-app/data/
+/data/
+/ai-agent-station-study-app/.local-config
+.claude/
+
+### Runtime / Debug ###
+hs_err_pid*.log
+replay_pid*.log
+*.stackdump
+*.pid
+browser-state-*.json
+browser-state-*-fingerprint.json
+.m2/
+RAGS测评/
+SPEED_OPTIMIZATION_PLAN.md
+SPEED_OPTIMIZATION_PROGRESS.md
+scripts/
+
+### Logs ###
+*.log
+*.log.*.gz
+docs/dev-ops/test/*.log
+
+### Credentials ###
+docs/dev-ops/mcp-credentials/
+.env
+.env.*
+!.env.example
+
+### Local exports / backups ###
+tmp/
+backup/
+*.tar
+*.tar.gz
+*.zip
+*.docx
+*.pdf
+
+### Demo recording intermediates ###
+docs/demo-videos/.tmp-recordings/
+docs/demo-videos/*.failure.png
+docs/demo-videos/node_modules/
+!docs/demo-videos/scripts/
+!docs/demo-videos/scripts/**
+
+### Large demo media ###
+docs/demo-videos/*.mp4
+docs/demo-videos/*.webm

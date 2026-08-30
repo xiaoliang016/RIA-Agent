@@ -1,0 +1,106 @@
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: smart-rd-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: "123456"
+      MYSQL_DATABASE: ai-agent-station-study
+      TZ: Asia/Shanghai
+    ports:
+      - "${SMART_RD_MYSQL_PORT:-13306}:3306"
+    volumes:
+      - tagent-mysql-data:/var/lib/mysql
+      - ./docs/dev-ops/mysql/sql/ai-agent-station-study-schema.sql:/docker-entrypoint-initdb.d/01-ai-agent-station-study.sql:ro
+      - ./docs/dev-ops/sql-migrations:/docker-entrypoint-initdb.d/migrations:ro
+      - ./docs/dev-ops/mysql/sql/smart-rd-init.sql:/docker-entrypoint-initdb.d/90-smart-rd-init.sql:ro
+    command: ["mysqld", "--character-set-server=utf8mb4", "--collation-server=utf8mb4_unicode_ci"]
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -uroot -p123456 --silent"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+    networks: [tagent]
+
+  postgres:
+    image: pgvector/pgvector:0.8.0-pg17
+    container_name: smart-rd-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ai-rag-knowledge
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: "123456"
+      TZ: Asia/Shanghai
+    ports:
+      - "${SMART_RD_PG_PORT:-15432}:5432"
+    volumes:
+      - tagent-postgres-data:/var/lib/postgresql/data
+      - ./docs/dev-ops/pgvector/sql/init.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d ai-rag-knowledge"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+    networks: [tagent]
+
+  redis:
+    image: redis:7-alpine
+    container_name: smart-rd-redis
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes"]
+    ports:
+      - "${SMART_RD_REDIS_PORT:-16379}:6379"
+    volumes:
+      - tagent-redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+    networks: [tagent]
+
+  tagent-app:
+    image: eclipse-temurin:21-jre
+    container_name: smart-rd-app
+    restart: unless-stopped
+    depends_on:
+      mysql:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      SPRING_PROFILES_ACTIVE: dev
+      MYSQL_USERNAME: root
+      MYSQL_PASSWORD: "123456"
+      MYSQL_URL: jdbc:mysql://mysql:3306/ai-agent-station-study?useUnicode=true&characterEncoding=utf8&autoReconnect=true&zeroDateTimeBehavior=convertToNull&serverTimezone=Asia/Shanghai&useSSL=false
+      PGVECTOR_USERNAME: postgres
+      PGVECTOR_PASSWORD: "123456"
+      PGVECTOR_URL: jdbc:postgresql://postgres:5432/ai-rag-knowledge
+      SPRING_DATA_REDIS_HOST: redis
+      SPRING_DATA_REDIS_PORT: "6379"
+      LLM_BASE_URL: ${LLM_BASE_URL:-https://api.openai.com/v1}
+      LLM_MODEL: ${LLM_MODEL:-gpt-4o-mini}
+      LLM_API_KEY: ${LLM_API_KEY:-local-development-placeholder}
+      EMBEDDING_BASE_URL: ${EMBEDDING_BASE_URL:-https://api.siliconflow.cn/v1}
+      EMBEDDING_MODEL: ${EMBEDDING_MODEL:-BAAI/bge-m3}
+      EMBEDDING_API_KEY: ${EMBEDDING_API_KEY:-local-development-placeholder}
+      MANAGEMENT_HEALTH_ELASTICSEARCH_ENABLED: "false"
+      MANAGEMENT_TRACING_ENABLED: "false"
+    ports:
+      - "${SMART_RD_APP_PORT:-8099}:8099"
+    volumes:
+      - ./ai-agent-station-study-app/target/ai-agent-station-study-app.jar:/app/ai-agent-station-study-app.jar:ro
+    working_dir: /app
+    command: ["java", "-jar", "/app/ai-agent-station-study-app.jar"]
+    networks: [tagent]
+
+volumes:
+  tagent-mysql-data:
+  tagent-postgres-data:
+  tagent-redis-data:
+
+networks:
+  tagent:
+    driver: bridge
