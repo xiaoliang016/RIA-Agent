@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI 模拟面试与求职辅导</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    * { box-sizing: border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+    .stream { white-space: pre-wrap; word-break: break-word; }
+    .stream h1, .stream h2, .stream h3 { font-weight: 700; margin: 12px 0 6px; color: #f8fafc; }
+    .stream p { margin: 6px 0; line-height: 1.7; }
+    .stream ul, .stream ol { margin: 6px 0 6px 22px; }
+    .stream li { margin: 3px 0; }
+    .stream code { background: #1e293b; border-radius: 4px; padding: 2px 5px; color: #bfdbfe; }
+    .stream pre { background: #020617; border: 1px solid #1e293b; border-radius: 8px; padding: 10px; overflow: auto; }
+    .pulse { animation: pulse 1.4s ease-in-out infinite; }
+    @keyframes pulse { 0%, 100% { opacity: .45; } 50% { opacity: 1; } }
+  </style>
+</head>
+<body class="min-h-screen bg-slate-950 text-slate-100">
+  <header class="border-b border-slate-800 bg-slate-900/90">
+    <div class="mx-auto flex max-w-6xl items-center justify-between px-4 py-4">
+      <div>
+        <div class="text-lg font-bold text-white">AI 模拟面试与求职辅导</div>
+        <div class="mt-1 text-xs text-slate-400">动态追问 · 逐题评分 · 面试复盘</div>
+      </div>
+      <div class="flex items-center gap-2">
+        <span id="loginUser" class="hidden rounded-full bg-slate-800 px-3 py-1 text-xs text-slate-300"></span>
+        <a href="/index.html" class="rounded-lg border border-slate-700 px-3 py-2 text-xs text-slate-300 hover:border-blue-500 hover:text-white">返回 Agent 工作台</a>
+      </div>
+    </div>
+  </header>
+
+  <main class="mx-auto grid max-w-6xl gap-5 px-4 py-6 lg:grid-cols-[330px_1fr]">
+    <section class="h-fit rounded-2xl border border-slate-800 bg-slate-900 p-5 shadow-xl">
+      <h1 class="text-base font-semibold text-white">创建面试会话</h1>
+      <p class="mt-1 text-xs leading-5 text-slate-400">选择目标岗位和考察方向，AI 会根据你的配置生成逐步面试流程。</p>
+      <div class="mt-5 space-y-4">
+        <label class="block text-sm text-slate-300">目标岗位
+          <input id="role" value="Java 后端开发工程师" class="mt-1.5 w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2.5 text-sm text-white outline-none focus:border-blue-500">
+        </label>
+        <label class="block text-sm text-slate-300">工作经验
+          <select id="experienceLevel" class="mt-1.5 w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2.5 text-sm text-white outline-none focus:border-blue-500">
+            <option>应届 / 0-1 年</option><option selected>1-3 年</option><option>3-5 年</option><option>5 年以上</option>
+          </select>
+        </label>
+        <label class="block text-sm text-slate-300">面试类型
+          <select id="interviewType" class="mt-1.5 w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2.5 text-sm text-white outline-none focus:border-blue-500">
+            <option selected>技术面试</option><option>项目面试</option><option>综合面试</option><option>系统设计</option>
+          </select>
+        </label>
+        <label class="block text-sm text-slate-300">题目数量
+          <input id="questionCount" type="number" min="1" max="20" value="5" class="mt-1.5 w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2.5 text-sm text-white outline-none focus:border-blue-500">
+        </label>
+        <div>
+          <div class="text-sm text-slate-300">重点方向 <span class="text-xs text-slate-500">（可多选）</span></div>
+          <div id="topics" class="mt-2 grid grid-cols-2 gap-2"></div>
+        </div>
+        <div id="setupError" class="hidden rounded-lg border border-red-900 bg-red-950/50 px-3 py-2 text-xs text-red-300"></div>
+        <button id="createBtn" onclick="createSession()" class="w-full rounded-lg bg-blue-600 py-2.5 text-sm font-medium text-white transition hover:bg-blue-500 disabled:cursor-not-allowed disabled:opacity-50">开始模拟面试</button>
+      </div>
+    </section>
+
+    <section class="flex min-h-[640px] flex-col rounded-2xl border border-slate-800 bg-slate-900 shadow-xl">
+      <div class="flex items-center justify-between border-b border-slate-800 px-5 py-4">
+        <div>
+          <div id="sessionTitle" class="font-semibold text-white">还没有开始面试</div>
+          <div id="sessionMeta" class="mt-1 text-xs text-slate-500">创建会话后，AI 面试官会在这里提问</div>
+        </div>
+        <div class="flex gap-2">
+          <button id="reportBtn" onclick="generateReport()" disabled class="rounded-lg border border-indigo-700/70 bg-indigo-950/40 px-3 py-2 text-xs text-indigo-200 hover:bg-indigo-900 disabled:cursor-not-allowed disabled:opacity-40">生成面试报告</button>
+          <button id="deleteBtn" onclick="deleteSession()" disabled class="rounded-lg border border-slate-700 px-3 py-2 text-xs text-slate-400 hover:border-red-700 hover:text-red-300 disabled:cursor-not-allowed disabled:opacity-40">结束会话</button>
+        </div>
+      </div>
+      <div id="transcript" class="stream flex-1 overflow-y-auto px-5 py-5 text-sm text-slate-300">
+        <div class="flex h-full items-center justify-center text-center text-slate-600"><div><div class="text-5xl">🎯</div><p class="mt-3">准备好后开始一场专属面试</p></div></div>
+      </div>
+      <div class="border-t border-slate-800 p-4">
+        <div class="mb-2 flex items-center justify-between text-xs text-slate-500"><span id="answerHint">开始面试后，在下方输入答案</span><span id="charCount">0 / 8000</span></div>
+        <textarea id="answer" rows="5" maxlength="8000" disabled oninput="updateCount()" placeholder="结合你的真实项目经历作答，支持 Markdown..." class="w-full resize-y rounded-xl border border-slate-700 bg-slate-800 px-3 py-3 text-sm text-white outline-none placeholder:text-slate-600 focus:border-blue-500 disabled:cursor-not-allowed disabled:opacity-50"></textarea>
+        <div class="mt-3 flex items-center justify-between gap-3">
+          <div id="streamStatus" class="text-xs text-slate-500"></div>
+          <button id="submitBtn" onclick="submitAnswer()" disabled class="rounded-lg bg-emerald-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-emerald-500 disabled:cursor-not-allowed disabled:opacity-40">提交答案并获取反馈</button>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const API = '/api/v1/interview';
+    const topicCatalog = [
+      ['java', 'Java 基础'], ['spring', 'Spring / Spring Boot'], ['database', 'MySQL / PostgreSQL'],
+      ['middleware', 'Redis / 消息队列'], ['jvm', 'JVM 与性能调优'], ['architecture', '分布式系统与架构'], ['project', '项目实战与系统设计']
+    ];
+    let session = null;
+    let questionIndex = 1;
+    let currentQuestion = '';
+    let streaming = false;
+    let reportMode = false;
+
+    function $(id) { return document.getElementById(id); }
+    function escapeHtml(value) { return String(value || '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+    function renderText(text) {
+      // Lightweight Markdown rendering for common interview output; preserve safe HTML boundaries.
+      return escapeHtml(text).replace(/^### (.*)$/gm, '<h3>$1</h3>').replace(/^## (.*)$/gm, '<h2>$1</h2>').replace(/^# (.*)$/gm, '<h1>$1</h1>').replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/`([^`]+)`/g, '<code>$1</code>').replace(/\n/g, '<br>');
+    }
+    function setError(message) { $('setupError').textContent = message; $('setupError').classList.remove('hidden'); }
+    function clearError() { $('setupError').classList.add('hidden'); }
+    function updateCount() { $('charCount').textContent = `${$('answer').value.length} / 8000`; }
+    function setBusy(busy, label) {
+      streaming = busy;
+      $('createBtn').disabled = busy;
+      $('submitBtn').disabled = busy || !session || !currentQuestion;
+      $('reportBtn').disabled = busy || !session;
+      $('deleteBtn').disabled = busy || !session;
+      $('streamStatus').textContent = busy ? (label || 'AI 正在思考...') : '';
+      if (busy) $('streamStatus').classList.add('pulse'); else $('streamStatus').classList.remove('pulse');
+    }
+    async function loadTopics() {
+      try {
+        const res = await fetch(API + '/topics');
+        const body = await res.json();
+        const list = body.data || [];
+        $('topics').innerHTML = (list.length ? list : topicCatalog.map(([id, name]) => ({id, name}))).map(t => `<label class="flex cursor-pointer items-center gap-2 rounded-lg border border-slate-700 bg-slate-800/60 px-2.5 py-2 text-xs text-slate-300 hover:border-blue-500"><input type="checkbox" value="${escapeHtml(t.id)}" class="topic accent-blue-500"><span>${escapeHtml(t.name)}</span></label>`).join('');
+      } catch (e) {
+        $('topics').innerHTML = topicCatalog.map(([id, name]) => `<label class="flex cursor-pointer items-center gap-2 rounded-lg border border-slate-700 bg-slate-800/60 px-2.5 py-2 text-xs text-slate-300"><input type="checkbox" value="${id}" class="topic accent-blue-500"><span>${name}</span></label>`).join('');
+      }
+    }
+    async function createSession() {
+      clearError();
+      const role = $('role').value.trim();
+      if (!role) { setError('请先填写目标岗位'); return; }
+      const count = Math.max(1, Math.min(20, Number($('questionCount').value) || 5));
+      const topics = [...document.querySelectorAll('.topic:checked')].map(x => x.value);
+      setBusy(true, '正在创建面试会话...');
+      try {
+        const login = JSON.parse(localStorage.getItem('agent_login') || '{}');
+        const res = await fetch(API + '/sessions', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ role, experienceLevel: $('experienceLevel').value, interviewType: $('interviewType').value, topics, questionCount: count, userId: login.userId || null }) });
+        const body = await res.json();
+        if (body.code !== '0000' || !body.data) throw new Error(body.info || '创建会话失败');
+        session = body.data; questionIndex = 1; currentQuestion = ''; reportMode = false;
+        $('sessionTitle').textContent = session.role;
+        $('sessionMeta').textContent = `${session.experienceLevel} · ${session.interviewType} · ${session.questionCount} 题`;
+        $('transcript').innerHTML = '';
+        $('answer').disabled = true; $('answer').value = ''; updateCount();
+        await consumeStream(`${API}/sessions/${encodeURIComponent(session.sessionId)}/start`, {method:'POST'}, 'opening');
+      } catch (e) { setError(e.message || '网络错误，请检查服务是否已启动'); setBusy(false); }
+    }
+    async function submitAnswer() {
+      if (!session || !currentQuestion || streaming) return;
+      const answer = $('answer').value.trim();
+      if (!answer) { setError('请先填写答案'); return; }
+      clearError();
+      const login = JSON.parse(localStorage.getItem('agent_login') || '{}');
+      const payload = {questionIndex, question: currentQuestion, answer, userId: login.userId || null};
+      addBlock('你', answer, 'candidate');
+      $('answer').value = ''; updateCount();
+      await consumeStream(`${API}/sessions/${encodeURIComponent(session.sessionId)}/answers`, {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload)}, 'feedback');
+    }
+    async function generateReport() {
+      if (!session || streaming) return;
+      reportMode = true; clearError();
+      await consumeStream(`${API}/sessions/${encodeURIComponent(session.sessionId)}/report`, {method:'POST'}, 'report');
+    }
+    async function deleteSession() {
+      if (!session || streaming || !confirm('确定结束当前面试会话吗？')) return;
+      await fetch(`${API}/sessions/${encodeURIComponent(session.sessionId)}`, {method:'DELETE'});
+      session = null; currentQuestion = ''; $('transcript').innerHTML = '<div class="flex h-full items-center justify-center text-slate-600">会话已结束，可以重新创建一场面试</div>'; $('answer').disabled = true; $('answer').value = ''; updateCount(); setBusy(false); $('sessionTitle').textContent = '还没有开始面试'; $('sessionMeta').textContent = '创建会话后，AI 面试官会在这里提问';
+    }
+    function addBlock(title, text, kind) {
+      const wrapper = document.createElement('div'); wrapper.className = `mb-4 rounded-xl border ${kind === 'candidate' ? 'border-blue-900 bg-blue-950/30' : 'border-slate-800 bg-slate-950/60'} p-4`;
+      wrapper.innerHTML = `<div class="mb-2 text-xs font-semibold ${kind === 'candidate' ? 'text-blue-300' : 'text-emerald-300'}">${title}</div><div class="content text-sm leading-7"></div>`;
+      wrapper.querySelector('.content').innerHTML = renderText(text); $('transcript').appendChild(wrapper); $('transcript').scrollTop = $('transcript').scrollHeight; return wrapper.querySelector('.content');
+    }
+    async function consumeStream(url, options, mode) {
+      setBusy(true, mode === 'report' ? '正在生成面试报告...' : 'AI 面试官正在思考...');
+      $('answer').disabled = true;
+      const content = addBlock(mode === 'opening' ? 'AI 面试官 · 第 1 题' : (mode === 'report' ? '面试报告' : `AI 面试官 · 第 ${questionIndex} 题反馈`), '', 'assistant');
+      try {
+        const login = JSON.parse(localStorage.getItem('agent_login') || '{}');
+        options.headers = {...(options.headers || {}), ...(login.userId ? {'X-User-Id': String(login.userId)} : {})};
+        const res = await fetch(url, options);
+        if (!res.ok || !res.body) throw new Error(`请求失败（HTTP ${res.status}）`);
+        const reader = res.body.getReader(); const decoder = new TextDecoder(); let buffer = ''; let full = '';
+        while (true) {
+          const {value, done} = await reader.read(); if (done) break;
+          buffer += decoder.decode(value, {stream:true}); const frames = buffer.split(/\n\n/); buffer = frames.pop() || '';
+          for (const frame of frames) {
+            const dataLine = frame.split(/\r?\n/).find(line => line.startsWith('data:'));
+            if (!dataLine) continue;
+            const raw = dataLine.slice(5).trim(); let payload; try { payload = JSON.parse(raw); } catch (_) { payload = {token: raw}; }
+            const token = payload.token || (payload.data && payload.data.token) || '';
+            const resultContent = payload.content || (payload.data && payload.data.content) || '';
+            const nextText = token && token !== '[DONE]' ? token : (!full && resultContent ? resultContent : '');
+            if (nextText) { full += nextText; content.innerHTML = renderText(full); $('transcript').scrollTop = $('transcript').scrollHeight; }
+          }
+        }
+        if (!full.trim()) content.innerHTML = '<span class="text-slate-500">本次没有收到文本输出，请检查模型 API 配置。</span>';
+        if (mode === 'opening') { currentQuestion = extractQuestion(full) || full; $('answer').disabled = false; $('answerHint').textContent = '回答完成后提交，AI 会评分并给出下一题'; }
+        if (mode === 'feedback') {
+          questionIndex += 1;
+          currentQuestion = extractQuestion(full) || '';
+          const hasNextQuestion = questionIndex <= (session.questionCount || 5) && !!currentQuestion;
+          $('answer').disabled = !hasNextQuestion;
+          $('answerHint').textContent = hasNextQuestion ? `请回答第 ${questionIndex} 题` : '题目已完成，可生成面试报告';
+        }
+        if (mode === 'report') { $('answerHint').textContent = '报告已生成，可返回重新创建会话'; $('answer').disabled = true; }
+      } catch (e) { content.innerHTML = `<span class="text-red-300">${escapeHtml(e.message || '流式请求失败')}</span>`; }
+      finally { setBusy(false); $('submitBtn').disabled = !session || !currentQuestion || reportMode; }
+    }
+    function extractQuestion(text) {
+      const lines = String(text || '').split(/\n/).map(x => x.replace(/^\s*[#\-*\d.、]+\s*/, '').trim()).filter(Boolean);
+      return lines.find(x => x.includes('？') || x.includes('?')) || lines[lines.length - 1] || '';
+    }
+    (function init() {
+      const login = JSON.parse(localStorage.getItem('agent_login') || '{}');
+      if (login.username) { $('loginUser').textContent = `已登录：${login.username}`; $('loginUser').classList.remove('hidden'); }
+      loadTopics();
+    })();
+  </script>
+</body>
+</html>

@@ -37,10 +37,12 @@ Compose 会启动 MySQL、PostgreSQL + pgvector、Redis 和智能研发助手应
 
 ## 访问地址
 
+- AI 模拟面试：[http://localhost:8099/interview.html](http://localhost:8099/interview.html)
 - 首页：<http://localhost:8099/index.html>
 - Agent 配置：<http://localhost:8099/agent-config.html>
 - 健康检查：<http://localhost:8099/actuator/health>
 - GitHub Issue 分析：`POST http://localhost:8099/api/v1/developer-assistant/issues/analyze`
+- 面试接口文档：见 [docs/interview-api.md](docs/interview-api.md)
 
 网页登录账号：`admin` / `123456`。
 
